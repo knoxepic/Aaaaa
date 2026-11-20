@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FetchTube — YouTube Audio &amp; Video Downloader</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="hero">
+      <h1><span class="logo">▶</span> FetchTube</h1>
+      <p class="tag">Download YouTube audio &amp; video — every quality, from 144p to 8K, plus MP3/M4A/Opus audio.</p>
+    </header>
+
+    <section class="panel">
+      <form id="search-form" class="url-row" autocomplete="off">
+        <input id="url" type="url" placeholder="Paste a YouTube URL (watch, shorts, youtu.be…)" required />
+        <button id="info-btn" type="submit" class="btn primary">Fetch</button>
+      </form>
+      <p class="hint">API: <code>/api/info?url=…</code> · <code>/api/download?url=…&amp;quality=1080</code> · <code>/api/download?url=…&amp;mode=audio&amp;audio_format=mp3</code></p>
+    </section>
+
+    <section id="result" class="panel hidden">
+      <div class="meta">
+        <img id="thumb" alt="" />
+        <div>
+          <h2 id="title"></h2>
+          <p id="byline"></p>
+          <p id="stats" class="muted"></p>
+        </div>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="video" type="button"><span>🎬 Video</span><small id="video-count"></small></button>
+        <button class="tab" data-tab="audio" type="button"><span>🎧 Audio</span><small id="audio-count"></small></button>
+      </div>
+
+      <div id="tab-video" class="fmts"></div>
+
+      <div id="tab-audio" class="fmts hidden">
+        <div id="audio-list"></div>
+        <div class="audio-actions">
+          <button id="mp3-btn" class="btn primary" type="button">Download best as MP3</button>
+          <button id="m4a-btn" class="btn" type="button">M4A</button>
+          <button id="opus-btn" class="btn" type="button">Opus</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="loader" class="hidden"><div class="spinner"></div><span id="loader-text">Fetching video info…</span></div>
+    <div id="alert" class="alert hidden"></div>
+
+    <footer class="foot muted">
+      Educational demo. Respect YouTube's Terms of Service, copyright law, and creators' rights. Download only content you own or that is licensed for download.
+    </footer>
+  </main>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
