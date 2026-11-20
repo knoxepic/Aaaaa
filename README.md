@@ -108,3 +108,20 @@ templates/       Web UI
 static/          CSS + frontend JS
 ffmpeg           Bundled static ffmpeg (auto-detected)
 ```
+
+## Fixing "Failed to extract any player response" (cloud/datacenter IPs)
+
+YouTube bot-checks datacenter IPs (HF Spaces, Render, Railway). If extraction
+fails like this, provide YouTube cookies:
+
+1. Install the browser extension **"Get cookies.txt LOCALLY"** (Chrome/Firefox)
+2. Open **youtube.com** while logged in and export cookies in **Netscape format**
+   (use a throwaway Google account if possible)
+3. On Hugging Face Spaces: Space Settings -> Variables and secrets -> New secret
+   - Name: `YOUTUBE_COOKIES`
+   - Value: paste the full cookies.txt content
+4. Restart the Space. The app also auto-detects a `cookies.txt` file placed
+   next to `app.py`, or a file path in the same env var.
+
+The app now also retries with yt-dlp default clients (incl. `tv`) before
+giving up, which already resolves most datacenter-IP extraction failures.

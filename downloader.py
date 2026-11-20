@@ -12,6 +12,10 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DOWNLOAD_DIR = os.path.join(tempfile.gettempdir(), "ytdl-downloads")
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
+_YT_CLIENTS = ["tv", "web_safari", "android_vr", "android", "mweb"]
+_COOKIES_ENV_VARS = ("YOUTUBE_COOKIES", "YTDLP_COOKIES")
+_cookies_file = None
+
 _FILE_TTL_SECONDS = 3600
 
 
@@ -61,7 +65,34 @@ def _ffmpeg_location():
         return None
 
 
-def _base_opts(extra=None):
+def _cookies_path():
+    global _cookies_file
+    if _cookies_file is not None:
+        return _cookies_file if _cookies_file != "" else None
+    existing = os.path.join(BASE_DIR, "cookies.txt")
+    if os.path.isfile(existing):
+        _cookies_file = existing
+        return existing
+    for env in _COOKIES_ENV_VARS:
+        raw = os.environ.get(env, "").strip()
+        if not raw:
+            continue
+        if os.path.isfile(raw):
+            _cookies_file = raw
+            return raw
+        if raw.startswith("# Netscape") or ".youtube.com" in raw:
+            path = os.path.join(DOWNLOAD_DIR, "cookies.txt")
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write(raw.replace("\\n", "\n") if "\\n" in raw and "\n" not in raw else raw)
+            _cookies_file = path
+            return path
+        _cookies_file = raw
+        return raw
+    _cookies_file = ""
+    return None
+
+
+def _base_opts(extra=None, clients=None):
     opts = {
         "quiet": True,
         "no_warnings": True,
@@ -71,8 +102,11 @@ def _base_opts(extra=None):
         "retries": 3,
         "restrictfilenames": True,
         "ffmpeg_location": _ffmpeg_location(),
-        "extractor_args": {"youtube": {"player_client": ["web_safari", "android", "web"]}},
+        "extractor_args": {"youtube": {"player_client": clients or _YT_CLIENTS}},
     }
+    cookies = _cookies_path()
+    if cookies:
+        opts["cookiefile"] = cookies
     if extra:
         opts.update(extra)
     return opts
@@ -127,10 +161,22 @@ def _audio_entry(f):
     }
 
 
+def _extract(url, extra=None, download=False):
+    """Try the configured clients, then fall back to yt-dlp defaults."""
+    base = dict(extra or {})
+    last_err = None
+    for clients in (_YT_CLIENTS, ["default"]):
+        try:
+            with yt_dlp.YoutubeDL(_base_opts(base, clients=clients)) as ydl:
+                return ydl.extract_info(url, download=download)
+        except yt_dlp.utils.DownloadError as exc:
+            last_err = exc
+            continue
+    raise last_err
+
+
 def fetch_info(url):
-    opts = _base_opts()
-    with yt_dlp.YoutubeDL(opts) as ydl:
-        info = ydl.extract_info(url, download=False)
+    info = _extract(url)
 
     videos, audios = [], []
     for f in info.get("formats", []):
@@ -205,10 +251,9 @@ def resolve_download(url, format_spec=None, audio_mode=False, audio_format="mp3"
         })
         ext = "mp4"
 
-    with yt_dlp.YoutubeDL(opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-        if "entries" in info:
-            info = info["entries"][0]
+    info = _extract(url, opts, download=True)
+    if "entries" in info:
+        info = info["entries"][0]
 
     filename = f"{_safe_title(info)}.{ext}"
     path = os.path.join(DOWNLOAD_DIR, f"{task_id}.{ext}")
