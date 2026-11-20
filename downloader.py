@@ -5,6 +5,7 @@ import tempfile
 import threading
 import time
 import uuid
+import http.cookiejar
 
 import yt_dlp
 
@@ -13,6 +14,13 @@ DOWNLOAD_DIR = os.path.join(tempfile.gettempdir(), "ytdl-downloads")
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
 _YT_CLIENTS = ["tv", "web_safari", "android_vr", "android", "mweb"]
+_CLIENT_GROUPS = [
+    ["tv"],
+    ["web_safari", "android_vr", "mweb"],
+    ["android", "ios"],
+    ["default"],
+]
+_TRANSIENT_ERRORS = ("player response", "needs to be reloaded", "Sign in", "cookies")
 _COOKIES_ENV_VARS = ("YOUTUBE_COOKIES", "YTDLP_COOKIES")
 _cookies_file = None
 
@@ -106,6 +114,17 @@ def _cookies_path():
     return None
 
 
+def _valid_cookiefile(path):
+    if not path or not os.path.isfile(path):
+        return False
+    try:
+        jar = http.cookiejar.MozillaCookieJar(path)
+        jar.load(ignore_discard=True, ignore_expires=True)
+        return True
+    except Exception:
+        return False
+
+
 def _base_opts(extra=None, clients=None):
     opts = {
         "quiet": True,
@@ -119,7 +138,7 @@ def _base_opts(extra=None, clients=None):
         "extractor_args": {"youtube": {"player_client": clients or _YT_CLIENTS}},
     }
     cookies = _cookies_path()
-    if cookies:
+    if cookies and _valid_cookiefile(cookies):
         opts["cookiefile"] = cookies
     if extra:
         opts.update(extra)
@@ -176,17 +195,26 @@ def _audio_entry(f):
 
 
 def _extract(url, extra=None, download=False):
-    """Try the configured clients, then fall back to yt-dlp defaults."""
+    """Try several client groups, with and without cookies, return first success."""
     base = dict(extra or {})
     last_err = None
-    for clients in (_YT_CLIENTS, ["default"]):
-        try:
-            with yt_dlp.YoutubeDL(_base_opts(base, clients=clients)) as ydl:
-                return ydl.extract_info(url, download=download)
-        except yt_dlp.utils.DownloadError as exc:
-            last_err = exc
-            continue
-    raise last_err
+    informative_err = None
+    for clients in _CLIENT_GROUPS:
+        for use_cookies in (True, False):
+            try:
+                opts = _base_opts(base, clients=clients)
+                if not use_cookies:
+                    opts.pop("cookiefile", None)
+                with yt_dlp.YoutubeDL(opts) as ydl:
+                    return ydl.extract_info(url, download=download)
+            except yt_dlp.utils.DownloadError as exc:
+                last_err = exc
+                if any(t in str(exc) for t in _TRANSIENT_ERRORS):
+                    informative_err = informative_err or exc
+            except yt_dlp.utils.CookieLoadError:
+                last_err = last_err or None
+                continue
+    raise informative_err or last_err
 
 
 def fetch_info(url):
