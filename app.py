@@ -19,6 +19,20 @@ def _error(message, status=400):
     return jsonify({"ok": False, "error": message, "status": status}), status
 
 
+_HINT = (" | Hint: YouTube bot-checked this server IP. Add the YOUTUBE_COOKIES "
+         "Space secret with youtube.com cookies in Netscape format (see README), "
+         "then restart the app.")
+
+
+def _yt_error(exc):
+    msg = str(exc)
+    if ("player response" in msg or "page needs to be reloaded" in msg
+            or "Sign in to confirm" in msg or "CookieLoadError" in msg):
+        msg += _HINT
+        return _error(msg, 502)
+    return _error(msg, 502)
+
+
 @app.get("/")
 def index():
     return render_template("index.html")
@@ -37,7 +51,7 @@ def api_info():
     try:
         info = downloader.fetch_info(url)
     except downloader.yt_dlp.utils.DownloadError as exc:
-        return _error(str(exc), 502)
+        return _yt_error(exc)
     except Exception as exc:
         return _error(f"Unexpected error: {exc}", 500)
     if MAX_DURATION_SECONDS and info.get("duration") and info["duration"] > MAX_DURATION_SECONDS:
@@ -53,7 +67,7 @@ def api_formats():
     try:
         info = downloader.fetch_info(url)
     except downloader.yt_dlp.utils.DownloadError as exc:
-        return _error(str(exc), 502)
+        return _yt_error(exc)
     except Exception as exc:
         return _error(f"Unexpected error: {exc}", 500)
     return jsonify({
@@ -118,7 +132,7 @@ def api_download():
             url, format_spec=format_spec, audio_mode=audio_mode, audio_format=audio_format
         )
     except downloader.yt_dlp.utils.DownloadError as exc:
-        return _error(str(exc), 502)
+        return _yt_error(exc)
     except Exception as exc:
         return _error(f"Unexpected error: {exc}", 500)
 
