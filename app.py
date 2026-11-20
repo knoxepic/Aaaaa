@@ -148,6 +148,23 @@ def api_download():
         return _error(f"Failed to stream file: {exc}", 500)
 
 
+@app.post("/api/cookies")
+def api_cookies():
+    key_required = os.environ.get("COOKIE_KEY", "").strip()
+    if not key_required:
+        return _error("Cookie saving is disabled. Set the COOKIE_KEY secret/env var first.", 403)
+    data = request.get_json(silent=True) or {}
+    if data.get("key", "") != key_required:
+        return _error("Wrong key.", 403)
+    cookies = (data.get("cookies") or "").strip()
+    if not cookies:
+        return _error("Cookies text is empty.", 400)
+    if "youtube.com" not in cookies:
+        return _error("This does not look like a youtube.com cookies file (missing 'youtube.com').", 400)
+    path = downloader.set_cookies_text(cookies)
+    return jsonify({"ok": True, "saved": path})
+
+
 @app.errorhandler(404)
 def not_found(_):
     return _error("Not found. See GET /api/health, /api/info?url=..., /api/formats, /api/download", 404)

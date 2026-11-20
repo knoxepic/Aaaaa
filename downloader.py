@@ -16,6 +16,20 @@ _YT_CLIENTS = ["tv", "web_safari", "android_vr", "android", "mweb"]
 _COOKIES_ENV_VARS = ("YOUTUBE_COOKIES", "YTDLP_COOKIES")
 _cookies_file = None
 
+
+def set_cookies_text(text):
+    """Persist cookies pasted via the web UI (runtime only, survives until restart)."""
+    global _cookies_file
+    text = (text or "").strip()
+    if not text:
+        _cookies_file = ""
+        return None
+    path = os.path.join(DOWNLOAD_DIR, "runtime-cookiefile.txt")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(text.replace("\\n", "\n") if "\\n" in text and "\n" not in text else text)
+    _cookies_file = path
+    return path
+
 _FILE_TTL_SECONDS = 3600
 
 

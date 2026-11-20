@@ -9,9 +9,25 @@
 <body>
   <main class="wrap">
     <header class="hero">
-      <h1><span class="logo">▶</span> FetchTube</h1>
+      <h1><span class="logo">▶</span> FetchTube <button id="cookie-btn" class="btn small" type="button" title="Set YouTube cookies">🍪 cookies</button></h1>
       <p class="tag">Download YouTube audio &amp; video — every quality, from 144p to 8K, plus MP3/M4A/Opus audio.</p>
     </header>
+
+    <div id="cookie-modal" class="modal hidden">
+      <div class="modal-box">
+        <h3>🍪 YouTube cookies (fixes bot-check / low quality)</h3>
+        <p>1. Chrome/Firefox me <b>"Get cookies.txt LOCALLY"</b> extension lagao<br>
+           2. youtube.com kholo → extension icon → Export<br>
+           3. Neeche file ka pura text paste karo</p>
+        <input id="cookie-key" type="password" placeholder="Access key (COOKIE_KEY jo aapne set kiya)" />
+        <textarea id="cookie-text" rows="8" placeholder="# Netscape HTTP Cookie File …"></textarea>
+        <div class="modal-actions">
+          <button id="cookie-save" class="btn primary" type="button">Save cookies</button>
+          <button id="cookie-close" class="btn" type="button">Close</button>
+        </div>
+        <p id="cookie-msg" class="muted"></p>
+      </div>
+    </div>
 
     <section class="panel">
       <form id="search-form" class="url-row" autocomplete="off">

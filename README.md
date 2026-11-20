@@ -125,3 +125,14 @@ fails like this, provide YouTube cookies:
 
 The app now also retries with yt-dlp default clients (incl. `tv`) before
 giving up, which already resolves most datacenter-IP extraction failures.
+
+### Easy way — paste cookies in the web UI
+
+1. Set one more secret `COOKIE_KEY` (any password you choose, e.g. `1234`)
+   alongside `YOUTUBE_COOKIES` (this one is optional but makes saving
+   permanent across restarts).
+2. Open the app page and click the **🍪 cookies** button.
+3. Enter your COOKIE_KEY, paste the Netscape cookie text, Save.
+
+Paste saves the cookies for the running app instantly (until restart); the
+`YOUTUBE_COOKIES` secret is what persists across restarts.

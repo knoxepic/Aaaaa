@@ -149,6 +149,38 @@ $("#mp3-btn").addEventListener("click", (e) => {
   startDownload({ url: currentUrl, mode: "audio", audio_format: "mp3" },
     () => { btn.disabled = false; });
 });
+const cookieModal = $("#cookie-modal");
+const cookieMsg = $("#cookie-msg");
+
+$("#cookie-btn").addEventListener("click", () => cookieModal.classList.remove("hidden"));
+$("#cookie-close").addEventListener("click", () => cookieModal.classList.add("hidden"));
+cookieModal.addEventListener("click", (e) => {
+  if (e.target === cookieModal) cookieModal.classList.add("hidden");
+});
+
+$("#cookie-save").addEventListener("click", async (e) => {
+  const btn = e.currentTarget;
+  btn.disabled = true;
+  cookieMsg.textContent = "Saving…";
+  try {
+    const res = await fetch("/api/cookies", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        key: $("#cookie-key").value,
+        cookies: $("#cookie-text").value,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || "Save failed");
+    cookieMsg.textContent = "✅ Saved! Ab dobara Fetch dabao.";
+  } catch (err) {
+    cookieMsg.textContent = "❌ " + err.message;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 $("#m4a-btn").addEventListener("click", (e) => {
   const btn = e.currentTarget;
   btn.disabled = true;
